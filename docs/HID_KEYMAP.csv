@@ -1,0 +1,6 @@
+Input,PhysicalPin,KeyboardPrototypeDefault,IntendedGamepad,FinalWebTRXAction,Condition
+DIAL_CW,P1.4+P1.5,e,Button1,VFO_UP,WebTRX key binding unconfirmed
+DIAL_CCW,P1.4+P1.5,q,Button2,VFO_DOWN,WebTRX key binding unconfirmed
+F1,P1.6,1,Optional Button3,USER_ASSIGN_1,Key configurable
+F2,P1.7,2,Optional Button4,USER_ASSIGN_2,Key configurable
+PTT,P3.2,p,Optional Button5,PTT_HOLD,Not safe to enable TX until WebTRX handling verified

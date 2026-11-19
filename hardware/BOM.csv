@@ -1,3 +1,6 @@
 Reference,Item,ManufacturerPartNumber,Quantity,UnitPriceJPY,Supply,Footprint,Status
-A1,Raspberry Pi Pico original RP2040,Raspberry Pi Pico,1,800,Akizuki,Module:RaspberryPi_Pico_Common_Unspecified,Preliminary
-SW1,Rotary encoder 24 pulses without detents,EC12E2430803,1,110,Akizuki,,Stock limited and manufacturer discontinued; footprint pending
+A1,USB MCU board,WeAct Studio CH552 Core Board V1.0 CH552T,1,332,User screenshot,Mounted core board,Selected USB/HID functionality not validated
+SW1,Rotary encoder 24 pulses non-detent,ALPS Alpine EC12E2430803,1,110,Akizuki,Pending mechanical verification,Existing candidate stock limited
+SW2,Programmable function key F1,NO momentary tactile switch,1,,,To be selected,New
+SW3,Programmable function key F2,NO momentary tactile switch,1,,,To be selected,New
+SW4,PTT momentary key,NO momentary tactile switch,1,,,To be selected,New safety verification required

@@ -1,5 +1,10 @@
 Net,Reference,Pin,PinDescription,ConnectedTo,ElectricalNote
-ENC_A,SW1,A,Rotary encoder phase A,A1 pin 4 GP2,INPUT_PULLUP at 3.3V
-ENC_B,SW1,B,Rotary encoder phase B,A1 pin 5 GP3,INPUT_PULLUP at 3.3V
-GND,SW1,C,Encoder common,A1 pin 3 GND,Switch closes A/B to GND
-USB,A1,Micro-USB,Onboard USB device port,Windows PC,5V from PC through Pico onboard regulator
+ENC_A,SW1,A,Encoder phase A,A1 P1.4 (Arduino 14),CH552 input pullup
+ENC_B,SW1,B,Encoder phase B,A1 P1.5 (Arduino 15),CH552 input pullup
+GND,SW1,C,Encoder common,A1 GND,Closed encoder contact to ground
+KEY_F1,SW2,1,NO button,A1 P1.6 (Arduino 16),Other contact to GND; input pullup
+KEY_F2,SW3,1,NO button,A1 P1.7 (Arduino 17),Other contact to GND; input pullup
+KEY_PTT,SW4,1,NO button,A1 P3.2 (Arduino 32),Other contact to GND; input pullup
+USB,A1,Micro USB,Board mounted connector,Windows PC,Power and USB HID through existing connector
+RESERVED,A1,P3.6,BOOT button and USB pin,Do not connect,Do not use as game input
+RESERVED,A1,RST,Board reset button,Do not connect,Do not use as game input
