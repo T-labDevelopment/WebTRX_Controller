@@ -1,6 +1,7 @@
-Input,PhysicalPin,KeyboardPrototypeDefault,IntendedGamepad,FinalWebTRXAction,Condition
-DIAL_CW,P1.4+P1.5,e,Button1,VFO_UP,WebTRX key binding unconfirmed
-DIAL_CCW,P1.4+P1.5,q,Button2,VFO_DOWN,WebTRX key binding unconfirmed
-F1,P1.6,1,Optional Button3,USER_ASSIGN_1,Key configurable
-F2,P1.7,2,Optional Button4,USER_ASSIGN_2,Key configurable
-PTT,P3.2,p,Optional Button5,PTT_HOLD,Not safe to enable TX until WebTRX handling verified
+Input,CH552_Pin,Default_HID_Type,Default_Value,Alternative_HID_Type,Config_Macro,Remarks
+DIAL_CW,P1.4/P1.5,Gamepad_X,+32..+127,N/A,ENCODER_REVERSE,Positive signed X while turning
+DIAL_CCW,P1.4/P1.5,Gamepad_X,-32..-127,N/A,ENCODER_REVERSE,Negative signed X while turning
+DIAL_IDLE,P1.4/P1.5,Gamepad_X,0,N/A,AXIS_ZERO_HOLD_MS,Return to zero after 120 ms
+F1,P1.6,Keyboard,1,Gamepad_Button1,KEYMAP_F1/F1_AS_GAMEPAD_BUTTON,Compile-time remap
+F2,P1.7,Keyboard,2,Gamepad_Button2,KEYMAP_F2/F2_AS_GAMEPAD_BUTTON,Compile-time remap
+PTT,P3.2,Keyboard,p,Gamepad_Button3,KEYMAP_PTT/PTT_AS_GAMEPAD_BUTTON,Hold/release only; WebTRX safety gating required

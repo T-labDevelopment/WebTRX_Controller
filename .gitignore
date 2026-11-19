@@ -1,10 +1,13 @@
-*.bak
-*.lck
-*.kicad_prl
-*.kicad_autosave
-*-backups/
-**/__pycache__/
+# build output and generated CH55xDuino third-party sources
+**/.DS_Store
+__pycache__/
+*.pyc
 *.hex
 *.bin
-*.o
+*.elf
 *.map
+*.lst
+*.o
+firmware/ch552_gamepad_keyboard/src/
+*.kicad_prl
+*-backups/

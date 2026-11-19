@@ -2,9 +2,9 @@ Net,Reference,Pin,PinDescription,ConnectedTo,ElectricalNote
 ENC_A,SW1,A,Encoder phase A,A1 P1.4 (Arduino 14),CH552 input pullup
 ENC_B,SW1,B,Encoder phase B,A1 P1.5 (Arduino 15),CH552 input pullup
 GND,SW1,C,Encoder common,A1 GND,Closed encoder contact to ground
-KEY_F1,SW2,1,NO button,A1 P1.6 (Arduino 16),Other contact to GND; input pullup
-KEY_F2,SW3,1,NO button,A1 P1.7 (Arduino 17),Other contact to GND; input pullup
-KEY_PTT,SW4,1,NO button,A1 P3.2 (Arduino 32),Other contact to GND; input pullup
-USB,A1,Micro USB,Board mounted connector,Windows PC,Power and USB HID through existing connector
+KEY_F1,SW2,1,NO button,A1 P1.6 (Arduino 16),Other contact to GND; output selectable keyboard/gamepad
+KEY_F2,SW3,1,NO button,A1 P1.7 (Arduino 17),Other contact to GND; output selectable keyboard/gamepad
+KEY_PTT,SW4,1,NO button,A1 P3.2 (Arduino 32),Other contact to GND; momentary PTT; software failsafe required
+USB,A1,Micro USB,Board mounted connector,Windows PC,Power and HID + USB bootloader through existing connector
 RESERVED,A1,P3.6,BOOT button and USB pin,Do not connect,Do not use as game input
 RESERVED,A1,RST,Board reset button,Do not connect,Do not use as game input
