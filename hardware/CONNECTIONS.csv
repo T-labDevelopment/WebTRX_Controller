@@ -1,0 +1,5 @@
+Net,Reference,Pin,PinDescription,ConnectedTo,ElectricalNote
+ENC_A,SW1,A,Rotary encoder phase A,A1 pin 4 GP2,INPUT_PULLUP at 3.3V
+ENC_B,SW1,B,Rotary encoder phase B,A1 pin 5 GP3,INPUT_PULLUP at 3.3V
+GND,SW1,C,Encoder common,A1 pin 3 GND,Switch closes A/B to GND
+USB,A1,Micro-USB,Onboard USB device port,Windows PC,5V from PC through Pico onboard regulator
