@@ -60,13 +60,17 @@ int main(){
   assert(pendingSteps.count==0);
   std::vector<int> values;
   for(const auto &r:reports) values.push_back(r.axis);
-  const std::vector<int> expected={0,127,0,127,0,-127,0};
+  const std::vector<int> expected={0,0,127,0,0,127,0,0,-127,0};
   assert(values==expected);
-  for(size_t i=2;i<reports.size();i+=2){
-    assert(reports[i].time - reports[i-1].time >= DIAL_ACTIVE_MS);
+  // Each counted edge must have a fresh neutral report BEFORE full scale.
+  for(size_t i=2;i<reports.size();i+=3){
+    assert(reports[i-1].axis==0);
+    assert(reports[i].axis==127 || reports[i].axis==-127);
+    assert(reports[i].time-reports[i-1].time>=DIAL_NEUTRAL_MS);
   }
-  for(size_t i=3;i<reports.size();i+=2){
-    assert(reports[i].time - reports[i-1].time >= DIAL_NEUTRAL_MS);
+  for(size_t i=3;i<reports.size();i+=3){
+    assert(reports[i].axis==0);
+    assert(reports[i].time-reports[i-1].time>=DIAL_ACTIVE_MS);
   }
   heldPins[BTN_F1_PIN]=1;
   advance(BUTTON_DEBOUNCE_MS+2);
@@ -82,11 +86,17 @@ int main(){
   assert(pendingSteps.count==0);
   unsigned asserted=0,neutral=0;
   int previous=0;
-  for(const auto &r:reports){
-    if(r.axis==127){assert(previous==0);asserted++;}
+  for(size_t i=0;i<reports.size();++i){
+    const auto &r=reports[i];
+    if(r.axis==127){
+      assert(i>0 && reports[i-1].axis==0); // 0 sent BEFORE +127
+      assert(r.time-reports[i-1].time>=DIAL_NEUTRAL_MS);
+      asserted++;
+    }
     if(r.axis==0 && previous==127)neutral++;
     previous=r.axis;
   }
   assert(asserted==24 && neutral==24);
-  std::puts("PASS: firmware mocked USB 1-click=+/-127->0, busy retry, buttons, 24-detent rotation");
+  assert(reports.size()==72); // 3 reports for each click: 0 / +127 / 0
+  std::puts("PASS: firmware mocked USB 1-click=0->+/-127, idle reset, busy retry, buttons, 24-detent rotation");
 }

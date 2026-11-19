@@ -2,8 +2,9 @@
  * WebTRX Dial Controller RevA / WeAct CH552 Core Board V1.0
  * USB HID: Report ID 1 = keyboard; Report ID 2 = gamepad X/buttons.
  * EC12E2420801 (24 detents/24 pulses): ONE detent = ONE full-scale
- * signed joystick X pulse (+127 or -127) followed by an X=0 report.
- * The stream is serialized; repeated direction events include neutral gaps.
+ * signed joystick X event in the order X=0 -> X=+127/-127.
+ * After a short hold, X returns to zero to rearm the next detent.
+ * The zero-start report is explicitly transmitted for EACH detent.
  * CH55xDuino 0.0.26: patch example first using tools/prepare_firmware.py
  * NOTICE: Not built, flashed, USB enumerated, or tested with WebTRX yet.
  */
@@ -27,10 +28,11 @@ static signed char activeDirection;
 enum PulsePhase {
   PULSE_INITIAL_NEUTRAL,
   PULSE_READY,
+  PULSE_BEGIN_ZERO,
+  PULSE_HOLD_ZERO,
   PULSE_ASSERT,
-  PULSE_HOLD,
-  PULSE_RELEASE,
-  PULSE_NEUTRAL_GAP
+  PULSE_HOLD_MAX,
+  PULSE_RESET_ZERO
 };
 static PulsePhase pulsePhase;
 
@@ -90,8 +92,8 @@ static void pollButtons(unsigned long now) {
 
 /* Return 1 only when the required state is already sent or the USB
  * library accepted a new report. Keep retrying on a busy endpoint. */
-static unsigned char sendGamepadState(signed char axis, unsigned long now) {
-  if (axis == lastSentAxis && gamepadButtons == lastSentButtons) return 1;
+static unsigned char sendGamepadState(signed char axis, unsigned long now, unsigned char force) {
+  if (!force && axis == lastSentAxis && gamepadButtons == lastSentButtons) return 1;
   if ((now - lastGamepadSentMs) < GAMEPAD_REFRESH_MS) return 0;
   lastGamepadSentMs = now;
   if (!Gamepad_setState(gamepadButtons, axis)) return 0;
@@ -100,39 +102,48 @@ static unsigned char sendGamepadState(signed char axis, unsigned long now) {
   return 1;
 }
 
+/* Per-click handshake: explicitly send 0, hold it, then send full scale.
+ * The trailing reset is a rearm/idle action, not the counted edge.
+ * USB busy retries MUST NOT consume an event until max was accepted. */
 static void serviceDialPulse(unsigned long now) {
   switch (pulsePhase) {
   case PULSE_INITIAL_NEUTRAL:
-    if (sendGamepadState(0, now)) pulsePhase = PULSE_READY;
+    if (sendGamepadState(0, now, 0)) pulsePhase = PULSE_READY;
     break;
   case PULSE_READY:
-    (void)sendGamepadState(0, now); /* update any gamepad-mapped switches */
+    (void)sendGamepadState(0, now, 0); /* gamepad-mapped switches */
     if (pendingSteps.count != 0) {
       activeDirection = rotaryQueue_front(&pendingSteps);
-      pulsePhase = PULSE_ASSERT;
+      pulsePhase = PULSE_BEGIN_ZERO;
     }
+    break;
+  case PULSE_BEGIN_ZERO:
+    /* Explicit fresh neutral report at the BEGINNING of every detent. */
+    if (sendGamepadState(0, now, 1)) {
+      phaseStartedMs = now;
+      pulsePhase = PULSE_HOLD_ZERO;
+    }
+    break;
+  case PULSE_HOLD_ZERO:
+    (void)sendGamepadState(0, now, 0);
+    if ((now - phaseStartedMs) >= DIAL_NEUTRAL_MS) pulsePhase = PULSE_ASSERT;
     break;
   case PULSE_ASSERT:
-    if (sendGamepadState(activeDirection > 0 ? 127 : -127, now)) {
-      /* Consume click only AFTER successful report submission. */
+    if (sendGamepadState(activeDirection > 0 ? 127 : -127, now, 0)) {
+      /* One click is counted at the 0 -> +/-127 transition. */
       rotaryQueue_pop(&pendingSteps);
       phaseStartedMs = now;
-      pulsePhase = PULSE_HOLD;
+      pulsePhase = PULSE_HOLD_MAX;
     }
     break;
-  case PULSE_HOLD:
-    (void)sendGamepadState(activeDirection > 0 ? 127 : -127, now);
-    if ((now - phaseStartedMs) >= DIAL_ACTIVE_MS) pulsePhase = PULSE_RELEASE;
+  case PULSE_HOLD_MAX:
+    (void)sendGamepadState(activeDirection > 0 ? 127 : -127, now, 0);
+    if ((now - phaseStartedMs) >= DIAL_ACTIVE_MS) pulsePhase = PULSE_RESET_ZERO;
     break;
-  case PULSE_RELEASE:
-    if (sendGamepadState(0, now)) {
-      phaseStartedMs = now;
-      pulsePhase = PULSE_NEUTRAL_GAP;
+  case PULSE_RESET_ZERO:
+    if (sendGamepadState(0, now, 0)) {
+      pulsePhase = PULSE_READY;
     }
-    break;
-  case PULSE_NEUTRAL_GAP:
-    (void)sendGamepadState(0, now);
-    if ((now - phaseStartedMs) >= DIAL_NEUTRAL_MS) pulsePhase = PULSE_READY;
     break;
   }
 }

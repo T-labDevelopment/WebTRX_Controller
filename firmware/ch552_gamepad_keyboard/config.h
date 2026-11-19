@@ -14,9 +14,10 @@
 #define BTN_PTT_PIN 32     /* P3.2 */
 
 #define ENCODER_REVERSE 0  /* swap the clockwise/counter-clockwise sign */
-/* One EC12E2420801 mechanical click = +127/-127 then zero.
+/* One EC12E2420801 mechanical click = explicit zero THEN +127/-127.
+ * An idle zero reset follows to allow independent subsequent edges.
  * Timing must be tuned against WebTRX Gamepad API sampling on real hardware.
- * 35ms high + 25ms neutral = ~16.7 detent-events/s maximum drain rate.
+ * 25ms zero-before-edge + 35ms full-scale = ~16.7 events/s nominal.
  */
 #define DIAL_ACTIVE_MS 35UL
 #define DIAL_NEUTRAL_MS 25UL
