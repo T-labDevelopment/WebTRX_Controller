@@ -1,0 +1,6 @@
+﻿Reference,Part,Quantity,Symbol,Footprint,Notes
+A1,WeAct Studio CH552 Core Board V1.0 / CH552T,1,WebTRX_Custom:WeAct_CH552_Core_Board_V1_0,WebTRX_Custom:WeAct_CH552_Core_Board_V1_0,"USB Micro-B onboard, module pin 1..20 direct; verify board mechanical fit"
+SW1,ALPS Alpine EC12E2420801,1,WebTRX_Custom:EC12E2420801,WebTRX_Custom:EC12E2420801,24 detents; M1/M2 mechanical mounting pads
+SW2,"12mm square momentary NO tact switch, E-Switch TL1100 footprint compatible",1,Switch:SW_Push,Button_Switch_THT:SW_PUSH-12mm,Match selected switch to 12.5x5 mm pin pattern
+SW3,"12mm square momentary NO tact switch, E-Switch TL1100 footprint compatible",1,Switch:SW_Push,Button_Switch_THT:SW_PUSH-12mm,Match selected switch to 12.5x5 mm pin pattern
+SW4,"12mm square momentary NO tact switch, E-Switch TL1100 footprint compatible",1,Switch:SW_Push,Button_Switch_THT:SW_PUSH-12mm,Match selected switch to 12.5x5 mm pin pattern
