@@ -20,11 +20,11 @@
 #define PTT_PIN   32    /* P3.2 */
 
 /* Test-only key map. NOT a verified WebTRX hotkey map. */
-#define KEY_DIAL_CW   'e'
-#define KEY_DIAL_CCW  'q'
-#define KEY_F1        '1'
-#define KEY_F2        '2'
-#define KEY_PTT       'p'
+#define MAP_DIAL_CW   'e'
+#define MAP_DIAL_CCW  'q'
+#define MAP_F1        '1'
+#define MAP_F2        '2'
+#define MAP_PTT       'p'
 #define REVERSE_DIAL   0
 #define BUTTON_DEBOUNCE_MS  15UL
 #define KEY_PULSE_MS         30UL
@@ -53,9 +53,9 @@ typedef struct {
     unsigned long changedAt;
 } Button;
 static Button buttons[3] = {
-    {F1_PIN,  KEY_F1, 0, 0, 0},
-    {F2_PIN,  KEY_F2, 0, 0, 0},
-    {PTT_PIN, KEY_PTT,0, 0, 0}
+    {F1_PIN,  MAP_F1, 0, 0, 0},
+    {F2_PIN,  MAP_F2, 0, 0, 0},
+    {PTT_PIN, MAP_PTT,0, 0, 0}
 };
 
 static void pollButtons(unsigned long now) {
@@ -110,7 +110,7 @@ static void sendQueuedDialPulses(unsigned long now) {
         return;
     }
     if (dialQueue) {
-        activePulseKey = (dialQueue > 0) ? KEY_DIAL_CW : KEY_DIAL_CCW;
+        activePulseKey = (dialQueue > 0) ? MAP_DIAL_CW : MAP_DIAL_CCW;
         if (dialQueue > 0) --dialQueue;
         else ++dialQueue;
         Keyboard_press(activePulseKey);
