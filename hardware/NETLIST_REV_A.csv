@@ -1,0 +1,10 @@
+Net,Ref,Pin,Target,Note
+ENC_A,SW1,A,J1-1 P1.4,GPIO internal pullup
+ENC_B,SW1,B,J1-2 P1.5,GPIO internal pullup
+GND,SW1,C,J1-6 GND,Encoder common
+KEY_F1,SW2,1,J1-3 P1.6,NO button
+GND,SW2,2,J1-6 GND,NO button common
+KEY_F2,SW3,1,J1-4 P1.7,NO button
+GND,SW3,2,J1-6 GND,NO button common
+KEY_PTT,SW4,1,J1-5 P3.2,NO button
+GND,SW4,2,J1-6 GND,NO button common
