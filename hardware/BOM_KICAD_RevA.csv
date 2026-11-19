@@ -1,0 +1,7 @@
+Reference,Value,Qty,Footprint,Remarks
+A1,WeAct CH552 Core Board V1.0,1,External finished module,USB/power already on module
+SW1,EC12E2420801,1,NOT SELECTED,24 detents/24 pulses
+SW2,F1 momentary NO,1,NOT SELECTED,GPIO pulled up
+SW3,F2 momentary NO,1,NOT SELECTED,GPIO pulled up
+SW4,PTT momentary NO,1,NOT SELECTED,GPIO pulled up; host fail-safe required
+J1,6-way logical interface,1,NOT SELECTED,Physical pin geometry NOT inferred
