@@ -1,35 +1,39 @@
 /*
- * WebTRX Dial Controller RevA / CH552T
- * USB HID (Report ID 1 keyboard, Report ID 2 joystick/gamepad).
- * Requires patched CH55xDuino 0.0.26 HidKeyboardMouse example USB sources:
- *    python tools/prepare_firmware.py <path-to-HidKeyboardMouse-example>
- * Then open this .ino with the board configured for USER CODE USB RAM.
- *
- * NOTICE: Not built, flashed, enumerated, or tested with WebTRX yet.
+ * WebTRX Dial Controller RevA / WeAct CH552 Core Board V1.0
+ * USB HID: Report ID 1 = keyboard; Report ID 2 = gamepad X/buttons.
+ * EC12E2420801 (24 detents/24 pulses): ONE detent = ONE full-scale
+ * signed joystick X pulse (+127 or -127) followed by an X=0 report.
+ * The stream is serialized; repeated direction events include neutral gaps.
+ * CH55xDuino 0.0.26: patch example first using tools/prepare_firmware.py
+ * NOTICE: Not built, flashed, USB enumerated, or tested with WebTRX yet.
  */
 #ifndef USER_USB_RAM
 #error "CH55xDuino Tools > USB Settings must select USER CODE USB RAM"
 #endif
 #include "config.h"
+#include "rotary_event.h"
 #include "src/userUsbHidKeyboardMouse/USBHIDKeyboardMouse.h"
 
-static const signed char quadrature[16] = {
-     0,  1, -1,  0,
-    -1,  0,  0,  1,
-     1,  0,  0, -1,
-     0, -1,  1,  0
-};
-static unsigned char lastAB;
-static signed char phaseAccumulator;
-static signed char dialAxis;
+static RotaryDecoder decoder;
+static RotaryEventQueue pendingSteps;
 static unsigned char gamepadButtons;
 static unsigned char lastSentButtons;
 static signed char lastSentAxis;
-static unsigned long lastDetentMs;
 static unsigned long lastGamepadSentMs;
-static unsigned char hadDetent;
+static unsigned long phaseStartedMs;
+static signed char activeDirection;
 
-/* Switch input, HID keyboard mapping, and gamepad routing configuration. */
+/* The 0 state MUST be successfully sent between successive step pulses. */
+enum PulsePhase {
+  PULSE_INITIAL_NEUTRAL,
+  PULSE_READY,
+  PULSE_ASSERT,
+  PULSE_HOLD,
+  PULSE_RELEASE,
+  PULSE_NEUTRAL_GAP
+};
+static PulsePhase pulsePhase;
+
 typedef struct {
   unsigned char pin;
   unsigned char key;
@@ -50,73 +54,86 @@ static unsigned char readEncoder(void) {
          (digitalRead(ENC_B_PIN) ? 1 : 0);
 }
 
-static signed char axisValue(unsigned long interval) {
-  unsigned long numerator;
-  if (interval <= AXIS_MIN_INTERVAL_MS) return AXIS_MAX_VALUE;
-  if (interval >= AXIS_MAX_INTERVAL_MS) return AXIS_MIN_VALUE;
-  numerator = (AXIS_MAX_INTERVAL_MS - interval) *
-              (AXIS_MAX_VALUE - AXIS_MIN_VALUE);
-  return (signed char)(AXIS_MIN_VALUE +
-       numerator / (AXIS_MAX_INTERVAL_MS - AXIS_MIN_INTERVAL_MS));
-}
-
-static void onRotaryDetent(signed char dir, unsigned long now) {
-  signed char value;
+static void pollEncoder(void) {
+  int8_t step = rotaryDecoder_update(&decoder, readEncoder());
 #if ENCODER_REVERSE
-  dir = -dir;
+  step = -step;
 #endif
-  /* Initial event uses medium sensitivity until a velocity is known. */
-  value = hadDetent ? axisValue(now - lastDetentMs) : 64;
-  hadDetent = 1;
-  lastDetentMs = now;
-  dialAxis = (dir > 0) ? value : -value;
-}
-
-static void pollEncoder(unsigned long now) {
-  unsigned char ab = readEncoder();
-  signed char delta = quadrature[(lastAB << 2) | ab];
-  lastAB = ab;
-  if (!delta) return;
-  phaseAccumulator += delta;
-  if (phaseAccumulator >= ROTARY_EDGES_PER_STEP) {
-    phaseAccumulator = 0;
-    onRotaryDetent(1, now);
-  } else if (phaseAccumulator <= -ROTARY_EDGES_PER_STEP) {
-    phaseAccumulator = 0;
-    onRotaryDetent(-1, now);
+  if (step != 0) {
+    /* Preserve the order of all detected clicks, even during rapid turns.
+     * The queue is bounded; droppedEvents tracks overflow for diagnosis. */
+    (void)rotaryQueue_push(&pendingSteps, step);
   }
 }
 
 static void pollButtons(unsigned long now) {
   unsigned char i;
-  for (i = 0; i < 3; i++) {
+  for (i = 0; i < 3; ++i) {
     SwitchInput *b = &switches[i];
-    unsigned char isPressed = (digitalRead(b->pin) == LOW);
-    if (isPressed != b->rawPressed) {
-      b->rawPressed = isPressed;
+    unsigned char pressed = (digitalRead(b->pin) == LOW);
+    if (pressed != b->rawPressed) {
+      b->rawPressed = pressed;
       b->lastChangeMs = now;
     }
-    if (isPressed == b->stablePressed ||
+    if (pressed == b->stablePressed ||
         (now - b->lastChangeMs) < BUTTON_DEBOUNCE_MS) continue;
-    b->stablePressed = isPressed;
+    b->stablePressed = pressed;
     if (b->routeGamepad) {
-      if (isPressed) gamepadButtons |= b->mask;
-      else gamepadButtons &= ~b->mask;
+      if (pressed) gamepadButtons |= b->mask;
+      else gamepadButtons &= (unsigned char)~b->mask;
     } else {
-      if (isPressed) Keyboard_press(b->key);
+      if (pressed) Keyboard_press(b->key);
       else Keyboard_release(b->key);
     }
   }
 }
 
-static void sendGamepad(unsigned long now) {
-  if ((now - lastGamepadSentMs) < GAMEPAD_REFRESH_MS) return;
+/* Return 1 only when the required state is already sent or the USB
+ * library accepted a new report. Keep retrying on a busy endpoint. */
+static unsigned char sendGamepadState(signed char axis, unsigned long now) {
+  if (axis == lastSentAxis && gamepadButtons == lastSentButtons) return 1;
+  if ((now - lastGamepadSentMs) < GAMEPAD_REFRESH_MS) return 0;
   lastGamepadSentMs = now;
-  if (dialAxis == lastSentAxis && gamepadButtons == lastSentButtons) return;
-  /* Important: If USB transfer fails, retry the state change next time. */
-  if (Gamepad_setState(gamepadButtons, dialAxis)) {
-    lastSentAxis = dialAxis;
-    lastSentButtons = gamepadButtons;
+  if (!Gamepad_setState(gamepadButtons, axis)) return 0;
+  lastSentAxis = axis;
+  lastSentButtons = gamepadButtons;
+  return 1;
+}
+
+static void serviceDialPulse(unsigned long now) {
+  switch (pulsePhase) {
+  case PULSE_INITIAL_NEUTRAL:
+    if (sendGamepadState(0, now)) pulsePhase = PULSE_READY;
+    break;
+  case PULSE_READY:
+    (void)sendGamepadState(0, now); /* update any gamepad-mapped switches */
+    if (pendingSteps.count != 0) {
+      activeDirection = rotaryQueue_front(&pendingSteps);
+      pulsePhase = PULSE_ASSERT;
+    }
+    break;
+  case PULSE_ASSERT:
+    if (sendGamepadState(activeDirection > 0 ? 127 : -127, now)) {
+      /* Consume click only AFTER successful report submission. */
+      rotaryQueue_pop(&pendingSteps);
+      phaseStartedMs = now;
+      pulsePhase = PULSE_HOLD;
+    }
+    break;
+  case PULSE_HOLD:
+    (void)sendGamepadState(activeDirection > 0 ? 127 : -127, now);
+    if ((now - phaseStartedMs) >= DIAL_ACTIVE_MS) pulsePhase = PULSE_RELEASE;
+    break;
+  case PULSE_RELEASE:
+    if (sendGamepadState(0, now)) {
+      phaseStartedMs = now;
+      pulsePhase = PULSE_NEUTRAL_GAP;
+    }
+    break;
+  case PULSE_NEUTRAL_GAP:
+    (void)sendGamepadState(0, now);
+    if ((now - phaseStartedMs) >= DIAL_NEUTRAL_MS) pulsePhase = PULSE_READY;
+    break;
   }
 }
 
@@ -124,32 +141,30 @@ void setup(void) {
   unsigned char i;
   pinMode(ENC_A_PIN, INPUT_PULLUP);
   pinMode(ENC_B_PIN, INPUT_PULLUP);
-  lastAB = readEncoder();
-  phaseAccumulator = 0;
-  dialAxis = 0;
+  rotaryDecoder_init(&decoder, readEncoder());
+  rotaryQueue_init(&pendingSteps);
+  pinMode(BTN_F1_PIN, INPUT_PULLUP);
+  pinMode(BTN_F2_PIN, INPUT_PULLUP);
+  pinMode(BTN_PTT_PIN, INPUT_PULLUP);
   gamepadButtons = 0;
-  lastSentAxis = 127; /* force 0-axis report after enumeration */
   lastSentButtons = 255;
-  hadDetent = 0;
+  lastSentAxis = 126; /* force initial neutral HID report */
   lastGamepadSentMs = millis();
-  lastDetentMs = millis();
-  for (i = 0; i < 3; i++) {
+  phaseStartedMs = millis();
+  activeDirection = 0;
+  pulsePhase = PULSE_INITIAL_NEUTRAL;
+  for (i = 0; i < 3; ++i) {
     SwitchInput *b = &switches[i];
-    pinMode(b->pin, INPUT_PULLUP);
     b->rawPressed = (digitalRead(b->pin) == LOW);
-    b->stablePressed = b->rawPressed; /* no initial keydown */
+    b->stablePressed = b->rawPressed; /* do not send keydown during boot */
     b->lastChangeMs = millis();
   }
   USBInit();
 }
+
 void loop(void) {
   unsigned long now = millis();
-  pollEncoder(now);
+  pollEncoder();
   pollButtons(now);
-  /* A joystick axis is absolute. Simulate spring return after idle. */
-  if (dialAxis && (now - lastDetentMs) >= AXIS_ZERO_HOLD_MS) {
-    dialAxis = 0;
-    hadDetent = 0;
-  }
-  sendGamepad(now);
+  serviceDialPulse(now);
 }

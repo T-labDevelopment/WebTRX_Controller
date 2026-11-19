@@ -3,6 +3,7 @@
 /*
  * WebTRX Dial Controller RevA (WeAct CH552 Core Board V1.0)
  * CH55xDuino 0.0.26 / USB gamepad + keyboard experimental firmware.
+ * EC12E2420801 24-detent encoder; ONE full-scale axis pulse per click.
  * USB VID:PID 1209:0001 is ONLY permitted for private in-house testing.
  * Must obtain an allocated VID/PID before distribution or production.
  */
@@ -13,12 +14,12 @@
 #define BTN_PTT_PIN 32     /* P3.2 */
 
 #define ENCODER_REVERSE 0  /* swap the clockwise/counter-clockwise sign */
-#define ROTARY_EDGES_PER_STEP 4
-#define AXIS_ZERO_HOLD_MS 120UL
-#define AXIS_MIN_VALUE 32
-#define AXIS_MAX_VALUE 127
-#define AXIS_MIN_INTERVAL_MS 10UL
-#define AXIS_MAX_INTERVAL_MS 110UL
+/* One EC12E2420801 mechanical click = +127/-127 then zero.
+ * Timing must be tuned against WebTRX Gamepad API sampling on real hardware.
+ * 35ms high + 25ms neutral = ~16.7 detent-events/s maximum drain rate.
+ */
+#define DIAL_ACTIVE_MS 35UL
+#define DIAL_NEUTRAL_MS 25UL
 #define BUTTON_DEBOUNCE_MS 12UL
 #define GAMEPAD_REFRESH_MS 10UL
 

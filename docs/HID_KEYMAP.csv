@@ -1,7 +1,7 @@
 Input,CH552_Pin,Default_HID_Type,Default_Value,Alternative_HID_Type,Config_Macro,Remarks
-DIAL_CW,P1.4/P1.5,Gamepad_X,+32..+127,N/A,ENCODER_REVERSE,Positive signed X while turning
-DIAL_CCW,P1.4/P1.5,Gamepad_X,-32..-127,N/A,ENCODER_REVERSE,Negative signed X while turning
-DIAL_IDLE,P1.4/P1.5,Gamepad_X,0,N/A,AXIS_ZERO_HOLD_MS,Return to zero after 120 ms
+DIAL_CW,P1.4/P1.5,Gamepad_X,+127 to 0,N/A,ENCODER_REVERSE,One detent one full-scale positive X pulse then neutral
+DIAL_CCW,P1.4/P1.5,Gamepad_X,-127 to 0,N/A,ENCODER_REVERSE,One detent one full-scale negative X pulse then neutral
+DIAL_IDLE,P1.4/P1.5,Gamepad_X,0,N/A,DIAL_ACTIVE_MS/DIAL_NEUTRAL_MS,Configurable 35ms high 25ms neutral; speed-independent
 F1,P1.6,Keyboard,1,Gamepad_Button1,KEYMAP_F1/F1_AS_GAMEPAD_BUTTON,Compile-time remap
 F2,P1.7,Keyboard,2,Gamepad_Button2,KEYMAP_F2/F2_AS_GAMEPAD_BUTTON,Compile-time remap
 PTT,P3.2,Keyboard,p,Gamepad_Button3,KEYMAP_PTT/PTT_AS_GAMEPAD_BUTTON,Hold/release only; WebTRX safety gating required
